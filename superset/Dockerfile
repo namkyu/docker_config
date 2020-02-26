@@ -47,12 +47,17 @@ RUN groupadd supergroup && \
     apt-get clean
 
 WORKDIR ${SUPERSET_HOME}
+COPY requirements.txt .
 COPY requirements-db.txt .
 COPY superset-init /usr/local/bin
 COPY superset_config.py .
 
+RUN chown -R superset:superset requirements.txt
+RUN chown -R superset:superset requirements-db.txt
+RUN chown -R superset:superset superset_config.py
 RUN pip install apache-superset==${SUPERSET_VERSION} && \
-    pip install -r requirements-db.txt
+    pip install -r requirements.txt && \
+	pip install -r requirements-db.txt
 
 
 # ====================================
