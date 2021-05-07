@@ -1,0 +1,45 @@
+version: '3.4'
+
+services:
+
+  rabbit1:
+    image: nklee_rabbitmq3.8.5:v2
+    container_name: rabbit1              
+    ports:
+      - "5672:5672"
+      - "9090:9090"
+      - "15672:15672"
+      - "61613:61613"    
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin      
+    volumes:
+      - "./init_rabbit.sh:/init_rabbit.sh"
+    restart: always
+
+  janus-container-01:
+    image: canyan/janus-gateway:0.10.7        
+    command: ["/usr/local/bin/janus", "-F", "/usr/local/etc/janus"]
+    container_name: janus-container-01
+    depends_on:         
+      - rabbit1        
+    links:
+      - rabbit1
+    ports:
+      - "8088:8088"      
+      - "8889:8889"
+      - "8000:8000"
+      - "7088:7088"
+      - "7089:7089"
+      - "8188:8188"
+      - "7188:7188"
+      - "20000-20100:20000-20100/udp"
+    volumes:
+      - "./config/janus.transport.http.jcfg:/usr/local/etc/janus/janus.transport.http.jcfg"
+      - "./config/janus.jcfg:/usr/local/etc/janus/janus.jcfg"
+      - "./config/janus.plugin.audiobridge.jcfg:/usr/local/etc/janus/janus.plugin.audiobridge.jcfg"      
+      - "./config/janus.transport.websockets.jcfg:/usr/local/etc/janus/janus.transport.websockets.jcfg"      
+      - "./config/janus.eventhandler.rabbitmqevh.jcfg:/usr/local/etc/janus/janus.eventhandler.rabbitmqevh.jcfg"            
+      - "./janus.log:/var/log/janus.log"
+      - "./eng.opus:/eng.opus"
+    restart: always

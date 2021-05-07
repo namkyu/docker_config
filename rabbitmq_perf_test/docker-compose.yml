@@ -1,0 +1,14 @@
+version: '3.4'
+
+networks:
+  test_janus_default:
+    external: true
+
+services:
+    
+  nkleeperftest:
+    image: pivotalrabbitmq/perf-test:latest
+    command: "--uri amqp://admin:admin@rabbit1:5672 -x 2 -y 2 -u 'throughput-test-1' -a --id 'test 1' -s 4000 -s 4000 -f persistent"    
+    networks:
+      - test_janus_default
+    restart: always

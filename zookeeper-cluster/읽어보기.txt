@@ -1,0 +1,72 @@
+## ZK-Web 로그인
+admin / admin
+
+## port 정리
+2181 : client port
+2888 : follower port
+3888 : election port
+8080 : admin server port
+
+
+## zookeeper CLI
+컨테이너에 접속 후 zkCli.sh 명령어 실행하면 로컬의 zookeeper에 연결된다.
+
+
+## Replicated 모드로 동작
+Replicated 모드로 동작시키기 위해서는 다음의 환경 변수가 셋팅되어야 한다.
+ZOO_MY_ID
+The id must be unique within the ensemble and should have a value between 1 and 255. Do note that this variable will not have any effect if you start the container with a /data directory that already contains the myid file
+myid 파일을 열어보면 ZOO_MY_ID 환경 변수에 셋팅한 값이 포함되어 있다.
+
+ZOO_SERVERS
+This variable allows you to specify a list of machines of the Zookeeper ensemble. Each entry has the form of server.id=host:port:port. Entries are separated with space. Do note that this variable will not have any effect if you start the container with a /conf directory that already contains the zoo.cfg file.
+In 3.5, the syntax of this has changed. Servers should be specified as such: server.id=<address1>:<port1>:<port2>[:role];[<client port address>:]<client port>
+
+## 데이터 저장공간
+/data, /datalog 디렉토리에 데이터를 저장한다.
+in-memory database 스냅샷
+데이터베이스 업데이트 트랜잭션 로그
+
+## Cluster 상태 보기
+root@zoo3:~# zkServer.sh status
+ZooKeeper JMX enabled by default
+Using config: /conf/zoo.cfg
+Client port found: 2181. Client address: localhost. Client SSL: false.
+Mode: leader
+3번 서버가 리더
+
+root@zoo2:/apache-zookeeper-3.6.2-bin# zkServer.sh status
+ZooKeeper JMX enabled by default
+Using config: /conf/zoo.cfg
+Client port found: 2181. Client address: localhost. Client SSL: false.
+Mode: follower
+2번 서버는 팔로워
+
+
+## Environment variables
+ZOO_TICK_TIME
+default 2000 (millisecond)
+
+ZOO_INIT_LIMIT
+default 5
+
+ZOO_SYNC_LIMIT
+default 2
+
+ZOO_MAX_CLIENT_CNXNS
+default 60
+
+ZOO_STANDALONE_ENABLED
+default true
+
+ZOO_ADMINSERVER_ENABLED
+default true
+
+ZOO_AUTOPURGE_PURGEINTERVAL
+default 0
+
+ZOO_AUTOPURGE_SNAPRETAINCOUNT
+default 3
+
+
+

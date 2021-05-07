@@ -1,0 +1,1 @@
+docker-compose up --scale redis-sentinel=1 -d
