@@ -1,0 +1,13 @@
+{
+	"emitter": "MyJanusInstance",
+	"type": 2,
+	"timestamp": 1614672435356683,
+	"session_id": 494565091151868,
+	"handle_id": 6744228840786495,
+	"opaque_id": "audiobridgetest-po6RFGo2tTbH",
+	"event": {
+		"name": "detached",
+		"plugin": "janus.plugin.audiobridge",
+		"opaque_id": "audiobridgetest-po6RFGo2tTbH"
+	}
+}
