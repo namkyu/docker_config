@@ -1,14 +1,31 @@
 version: '3.4'
 
-networks:
-  test_janus_default:
-    external: true
-
 services:
-    
+
+  rabbit:
+    image: rabbitmq:3.8.5-management
+    container_name: rabbit
+    ports:
+      - "5672:5672"
+      - "9090:9090"
+      - "15672:15672"
+      - "61613:61613"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:15672"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    restart: always
+
   nkleeperftest:
     image: pivotalrabbitmq/perf-test:latest
-    command: "--uri amqp://admin:admin@rabbit1:5672 -x 2 -y 2 -u 'throughput-test-1' -a --id 'test 1' -s 4000 -s 4000 -f persistent"    
-    networks:
-      - test_janus_default
-    restart: always
+    command: "--uri amqp://admin:admin@rabbit:5672 -x 1 -y 10 -u 'throughput-test' -a --id 'test 1' -f persistent -q 5 --json-body --size 500 --rate 30000 --use-millis"
+    volumes:
+      - "./test.json:/test.json"
+    depends_on:
+      - rabbit
+    links:
+      - rabbit
