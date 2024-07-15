@@ -13,10 +13,10 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # ====================================
 # execute command during building image
 # ====================================
-WORKDIR /root
-RUN mkdir -p test_db
-COPY test_db test_db
-COPY init_db.sh .
+#WORKDIR /root
+#RUN mkdir -p test_db
+#COPY test_db test_db
+#COPY init_db.sh .
 
 # ====================================
 # Run Container

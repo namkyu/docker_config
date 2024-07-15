@@ -32,3 +32,4 @@ build/
 .vscode/
 
 *.mp4
+/mariadb10/docker-compose/test_db/

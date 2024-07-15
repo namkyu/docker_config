@@ -1,5 +1,5 @@
 FROM docker_ubuntu:v1
-LABEL maintainer="nklee"
+LABEL maintainer="martin"
 LABEL description="build superset environment of image in ubuntu 18.04 with python3.6"
 
 # ====================================

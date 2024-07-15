@@ -1,5 +1,5 @@
 FROM ubuntu:18.04
-LABEL maintainer="nklee"
+LABEL maintainer="martin"
 LABEL description="build python3 environment of image in ubuntu 18.04"
 
 # ====================================
