@@ -1,0 +1,2 @@
+
+docker-compose.exe up

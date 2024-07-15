@@ -1,0 +1,39 @@
+version: '3.4'
+
+services:
+
+  zookeeper:
+    image: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: wurstmeister/kafka:2.12-2.0.1
+    container_name: kafka
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_HOST_NAME: 127.0.0.1
+      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "javainuse-topic:1:1"   # Topic명:Partition개수:Replica개수
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+      
+  kafka_manager:
+    image: hlebalbau/kafka-manager:stable
+    container_name: kafka-manager    
+    environment:
+      ZK_HOSTS: "zookeeper:2181"
+      APPLICATION_SECRET: "random-secret"
+      KM_ARGS: -Djava.net.preferIPv4Stack=true
+    ports:
+      - "9000:9000"
+    depends_on:
+      - kafka
+      - zookeeper

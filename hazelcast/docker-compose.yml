@@ -1,0 +1,24 @@
+version: '3.4'
+
+services:
+
+  hazelcast1:
+    image: hazelcast/hazelcast
+    container_name: ha1
+    ports:
+      - "5701:5701"
+    restart: always
+    
+  hazelcast2:
+    image: hazelcast/hazelcast
+    container_name: ha2
+    ports:
+      - "5702:5701"
+    restart: always
+    
+  hazelcast-management-center:
+    image: hazelcast/management-center
+    container_name: ha-center
+    ports:
+      - "8088:8080"
+    restart: always

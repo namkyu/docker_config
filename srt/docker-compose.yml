@@ -1,0 +1,14 @@
+version: '3.4'
+
+services:
+  
+  srt_ubuntu:
+    image: srt_ubuntu18:v2
+    container_name: srt1
+    ports:
+      - "8181:8181"
+      - "8282:8282"
+      - "4444:4444"
+      - "8282:8282/udp"      
+    entrypoint: ["sh", "-c"]
+    restart: always

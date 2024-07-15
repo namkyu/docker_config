@@ -1,0 +1,20 @@
+version: '3.4'
+
+services:
+
+  mariadb:
+    image: mariadb
+    container_name: mariadb
+    ports:
+      - "3306:3306"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+    volumes:
+      - "./test_db:/test_db"
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - 9091:8080
