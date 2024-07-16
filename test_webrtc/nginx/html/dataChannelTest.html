@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="WebRTC code samples">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta itemprop="description" content="Client-side WebRTC code samples">
+    <meta itemprop="name" content="WebRTC code samples">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta id="theme-color" name="theme-color" content="#ffffff">
+    <base target="_blank">
+    <title>Test</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+    <style>
+        #controls {
+            margin-top: 20px;
+        }
+
+        #controls label {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+<div id="container">
+    <video id="leftVideo" playsinline controls muted loop>
+        <source src="resources/chrome.mp4" type="video/mp4"/>
+        <p>This browser does not support the video element.</p>
+    </video>
+    <video id="rightVideo" playsinline autoplay controls></video>
+</div>
+<div>
+    <h2>Data Channel 테스트</h2>
+</div>
+<div id="controls">
+    <h5>Data Channel Settings</h5>
+    <label for="dataSize">Data Size (bytes):</label>
+    <input type="number" id="dataSize" value="1024">
+    <label for="interval">Interval (ms):</label>
+    <input type="number" id="interval" value="2000">
+</div>
+<div id="controls">
+    <h5>Data Channel Message</h5>
+    <label>
+        <input type="radio" name="messageType" value="b" checked>
+        Use Bytes
+    </label>
+    <label>
+        <input type="radio" name="messageType" value="f">
+        Use FlatBuffers
+    </label>
+</div>
+<div id="results">
+    <h5>Results</h5>
+    <p>Time to receive data: <span id="timeResult">N/A</span> ms</p>
+</div>
+<div id="controls">
+    <button onclick="startWebRTC()">Start WebRTC Connection</button>
+</div>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatbuffers@24.3.25/js/flatbuffers.min.js"></script>
+<script>
+
+    const leftVideo = document.getElementById('leftVideo');
+    const rightVideo = document.getElementById('rightVideo');
+
+    let stream;
+    let pc1;
+    let pc2;
+    let messageType;
+    let dataChannel;
+    let startTime;
+
+    const offerOptions = {
+        offerToReceiveAudio: 1,
+        offerToReceiveVideo: 1
+    };
+
+    function maybeCreateStream() {
+        if (stream) {
+            return;
+        }
+        if (leftVideo.captureStream) {
+            stream = leftVideo.captureStream();
+            console.log('Captured stream from leftVideo with captureStream', stream);
+        } else if (leftVideo.mozCaptureStream) {
+            stream = leftVideo.mozCaptureStream();
+            console.log('Captured stream from leftVideo with mozCaptureStream()', stream);
+        } else {
+            console.log('captureStream() not supported');
+        }
+    }
+
+    function getConfiguration() {
+        return {
+            iceServers: [{
+                urls: 'stun:localhost:3478'
+            }, {
+                urls: 'turn:localhost:3478',
+                username: 'test',
+                credential: '1234'
+            }],
+            iceTransportPolicy: 'all'
+        };
+    }
+
+    function startWebRTC() {
+        maybeCreateStream();
+        leftVideo.play();
+
+        const dataSize = parseInt(document.getElementById('dataSize').value, 10);
+        const interval = parseInt(document.getElementById('interval').value, 10);
+
+        messageType = document.querySelector('input[name="messageType"]:checked').value;
+
+        let configuration = getConfiguration()
+
+        pc1 = new RTCPeerConnection(configuration);
+        pc1.onicecandidate = e => onIceCandidate(pc1, e);
+        pc1.oniceconnectionstatechange = e => onIceStateChange(pc1, e);
+        console.log('Created local peer connection object pc1');
+
+        dataChannel = pc1.createDataChannel('testChannel');
+        dataChannel.onopen = () => {
+            console.log("dataChannel opened");
+            setInterval(() => {
+                startTime = new Date().getTime();
+                let data = getDataChannelMessage(dataSize);
+                dataChannel.send(data);
+            }, interval);
+        };
+
+        pc2 = new RTCPeerConnection(configuration);
+        pc2.onicecandidate = e => onIceCandidate(pc2, e);
+        pc2.oniceconnectionstatechange = e => onIceStateChange(pc2, e);
+        console.log('Created remote peer connection object pc2');
+
+        pc2.ontrack = gotRemoteStream;
+        stream.getTracks().forEach(track => pc1.addTrack(track, stream));
+        console.log('Added local stream to pc1');
+
+        pc2.ondatachannel = (event) => {
+            const receiveChannel = event.channel;
+            receiveChannel.onmessage = (event) => {
+                const endTime = new Date().getTime();
+                const timeTaken = endTime - startTime;
+                console.log("timeTaken : " + timeTaken);
+                document.getElementById('timeResult').textContent = timeTaken;
+            };
+        };
+
+        console.log('pc1 createOffer start');
+        pc1.createOffer(onCreateOfferSuccess, onCreateSessionDescriptionError, offerOptions);
+    }
+
+    function getDataChannelMessage(dataSize) {
+        if (messageType === "b") {
+            const data = new Uint8Array(dataSize).fill(0);
+            console.log("send data : " + data);
+            return data;
+        } else if (messageType === "f") {
+            const builder = new flatbuffers.Builder();
+            const contentOffset = MyGame.Sample.Message.createContentVector(builder, data);
+            MyGame.Sample.Message.startMessage(builder);
+            MyGame.Sample.Message.addContent(builder, contentOffset);
+            const message = MyGame.Sample.Message.endMessage(builder);
+            builder.finish(message);
+            return builder.asUint8Array();
+        }
+    }
+
+    function onCreateSessionDescriptionError(error) {
+        console.log(`Failed to create session description: ${error.toString()}`);
+    }
+
+    function onCreateOfferSuccess(desc) {
+        console.log(`Offer from pc1 ${desc.sdp}`);
+        console.log('pc1 setLocalDescription start');
+        pc1.setLocalDescription(desc, () => onSetLocalSuccess(pc1), onSetSessionDescriptionError);
+        console.log('pc2 setRemoteDescription start');
+        pc2.setRemoteDescription(desc, () => onSetRemoteSuccess(pc2), onSetSessionDescriptionError);
+        console.log('pc2 createAnswer start');
+        pc2.createAnswer(onCreateAnswerSuccess, onCreateSessionDescriptionError);
+    }
+
+    function onSetLocalSuccess(pc) {
+        console.log(`${getName(pc)} setLocalDescription complete`);
+    }
+
+    function onSetRemoteSuccess(pc) {
+        console.log(`${getName(pc)} setRemoteDescription complete`);
+    }
+
+    function onSetSessionDescriptionError(error) {
+        console.log(`Failed to set session description: ${error.toString()}`);
+    }
+
+    function gotRemoteStream(event) {
+        if (rightVideo.srcObject !== event.streams[0]) {
+            rightVideo.srcObject = event.streams[0];
+            console.log('pc2 received remote stream', event);
+        }
+    }
+
+    function onCreateAnswerSuccess(desc) {
+        console.log(`Answer from pc2: ${desc.sdp}`);
+        console.log('pc2 setLocalDescription start');
+        pc2.setLocalDescription(desc, () => onSetLocalSuccess(pc2), onSetSessionDescriptionError);
+        console.log('pc1 setRemoteDescription start');
+        pc1.setRemoteDescription(desc, () => onSetRemoteSuccess(pc1), onSetSessionDescriptionError);
+    }
+
+    function onIceCandidate(pc, event) {
+        getOtherPc(pc).addIceCandidate(event.candidate)
+            .then(
+                () => onAddIceCandidateSuccess(pc),
+                err => onAddIceCandidateError(pc, err)
+            );
+
+        console.log(`${getName(pc)} ICE candidate: ${event.candidate ? event.candidate.candidate : '(null)'}`);
+    }
+
+    function onAddIceCandidateSuccess(pc) {
+        console.log(`${getName(pc)} addIceCandidate success`);
+    }
+
+    function onAddIceCandidateError(pc, error) {
+        console.log(`${getName(pc)} failed to add ICE Candidate: ${error.toString()}`);
+    }
+
+    function onIceStateChange(pc, event) {
+        if (pc) {
+            console.log(`${getName(pc)} ICE state: ${pc.iceConnectionState}`);
+            console.log('ICE state change event: ', event);
+        }
+    }
+
+    function getName(pc) {
+        return (pc === pc1) ? 'pc1' : 'pc2';
+    }
+
+    function getOtherPc(pc) {
+        return (pc === pc1) ? pc2 : pc1;
+    }
+
+</script>
+</body>
+
+</html>

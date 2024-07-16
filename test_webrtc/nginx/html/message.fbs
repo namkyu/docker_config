@@ -1,0 +1,7 @@
+namespace MyGame.Sample;
+
+table Message {
+  content: [ubyte];
+}
+
+root_type Message;

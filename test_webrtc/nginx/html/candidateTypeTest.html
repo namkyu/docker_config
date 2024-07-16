@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta id="theme-color" name="theme-color" content="#ffffff">
     <base target="_blank">
-    <title>Video to Peer Connection</title>
+    <title>Test</title>
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
     <style>
         #controls {
@@ -26,13 +26,13 @@
 <body>
 <div id="container">
     <video id="leftVideo" playsinline controls muted loop>
-        <source src="chrome.mp4" type="video/mp4"/>
+        <source src="resources/chrome.mp4" type="video/mp4"/>
         <p>This browser does not support the video element.</p>
     </video>
     <video id="rightVideo" playsinline autoplay controls></video>
 </div>
 <div>
-    <h3>ICE Candidate Type 설정 테스트</h3>
+    <h2>ICE Candidate Type 설정 테스트</h2>
 </div>
 <div id="controls">
     <h5>PeerA</h5>
@@ -77,6 +77,7 @@
 </div>
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 <script>
+
     const leftVideo = document.getElementById('leftVideo');
     const rightVideo = document.getElementById('rightVideo');
 
@@ -85,6 +86,7 @@
     let pc2;
     let selectedIcePolicyPeerA;
     let selectedIcePolicyPeerB;
+    let startTime;
 
     const offerOptions = {
         offerToReceiveAudio: 1,
@@ -109,7 +111,7 @@
     function getConfiguration() {
         return {
             iceServers: [{
-                urls: 'stun:stun.l.google.com:19302'
+                urls: 'stun:localhost:3478'
             }, {
                 urls: 'turn:localhost:3478',
                 username: 'test',
@@ -126,18 +128,31 @@
         selectedIcePolicyPeerA = document.querySelector('input[name="candidateTypePeerA"]:checked').value;
         selectedIcePolicyPeerB = document.querySelector('input[name="candidateTypePeerB"]:checked').value;
 
-        pc1 = new RTCPeerConnection(getConfiguration());
-        console.log('Created local peer connection object pc1');
-        pc1.onicecandidate = e => onIceCandidate(pc1, e);
-        pc2 = new RTCPeerConnection(getConfiguration());
-        console.log('Created remote peer connection object pc2');
-        pc2.onicecandidate = e => onIceCandidate(pc2, e);
-        pc1.oniceconnectionstatechange = e => onIceStateChange(pc1, e);
-        pc2.oniceconnectionstatechange = e => onIceStateChange(pc2, e);
-        pc2.ontrack = gotRemoteStream;
+        let configuration = getConfiguration()
 
+        pc1 = new RTCPeerConnection(configuration);
+        pc1.onicecandidate = e => onIceCandidate(pc1, e);
+        pc1.oniceconnectionstatechange = e => onIceStateChange(pc1, e);
+        console.log('Created local peer connection object pc1');
+
+        pc2 = new RTCPeerConnection(configuration);
+        pc2.onicecandidate = e => onIceCandidate(pc2, e);
+        pc2.oniceconnectionstatechange = e => onIceStateChange(pc2, e);
+        console.log('Created remote peer connection object pc2');
+
+        pc2.ontrack = gotRemoteStream;
         stream.getTracks().forEach(track => pc1.addTrack(track, stream));
         console.log('Added local stream to pc1');
+
+        pc2.ondatachannel = (event) => {
+            const receiveChannel = event.channel;
+            receiveChannel.onmessage = (event) => {
+                const endTime = new Date().getTime();
+                const timeTaken = endTime - startTime;
+                console.log("timeTaken : " + timeTaken);
+                document.getElementById('timeResult').textContent = timeTaken;
+            };
+        };
 
         console.log('pc1 createOffer start');
         pc1.createOffer(onCreateOfferSuccess, onCreateSessionDescriptionError, offerOptions);
