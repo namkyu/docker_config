@@ -2,9 +2,9 @@ version: '3.4'
 
 services:
 
-  coturn:
+  coturn1:
     image: martin/coturn:4.6
-    container_name: coturn
+    container_name: coturn1
     networks:
       mynet:
         ipv4_address: 172.28.0.10
@@ -18,7 +18,26 @@ services:
       - TURN_USER=test
       - TURN_PASSWORD=1234
     volumes:
-      - ./turnserver.conf:/etc/coturn/turnserver.conf
+      - ./coturn1.conf:/etc/coturn/turnserver.conf
+    restart: on-failure
+
+  coturn2:
+    image: martin/coturn:4.6
+    container_name: coturn2
+    networks:
+      mynet:
+        ipv4_address: 172.28.0.11
+    ports:
+      - "3479:3479"
+      - "3479:3479/udp"
+      - "5350:5350"
+      - "5350:5350/udp"
+      - "49260-49300:49260-49300/udp"
+    environment:
+      - TURN_USER=test
+      - TURN_PASSWORD=1234
+    volumes:
+      - ./coturn2.conf:/etc/coturn/turnserver.conf
     restart: on-failure
 
   nginx:
@@ -26,7 +45,7 @@ services:
     container_name: nginx
     networks:
       mynet:
-        ipv4_address: 172.28.0.11
+        ipv4_address: 172.28.0.12
     ports:
       - 7979:80
     volumes:

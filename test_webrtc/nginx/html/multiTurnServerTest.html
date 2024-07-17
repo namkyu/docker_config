@@ -32,46 +32,34 @@
     <video id="rightVideo" playsinline autoplay controls></video>
 </div>
 <div>
-    <h2>Data Channel 테스트</h2>
+    <h2>ICE Candidate Type 설정 테스트</h2>
 </div>
 <div id="controls">
-    <h5>Data Channel Settings</h5>
-    <label for="dataSize">Data Size (bytes):</label>
-    <input type="number" id="dataSize" value="1024">
-    <label for="interval">Interval (ms):</label>
-    <input type="number" id="interval" value="2000">
-</div>
-<div id="controls">
-    <h5>Data Channel Message</h5>
+    <h5>PeerA</h5>
     <label>
-        <input type="radio" name="messageType" value="b" checked>
-        Use Bytes
+        <input type="radio" name="turnServerPortPeerA" value="3478" checked>
+        turn1
     </label>
     <label>
-        <input type="radio" name="messageType" value="f">
-        Use FlatBuffers
+        <input type="radio" name="turnServerPortPeerA" value="3479">
+        turn2
     </label>
 </div>
 <div id="controls">
-    <h5>Candidate Type</h5>
+    <h5>PeerB</h5>
     <label>
-        <input type="radio" name="candidateType" value="all" checked>
-        Host
+        <input type="radio" name="turnServerPortPeerB" value="3478" checked>
+        turn1
     </label>
     <label>
-        <input type="radio" name="candidateType" value="relay">
-        Relay
+        <input type="radio" name="turnServerPortPeerB" value="3479">
+        turn2
     </label>
-</div>
-<div id="results">
-    <h5>Results</h5>
-    <p>Time to receive data: <span id="timeResult">N/A</span> ms</p>
 </div>
 <div id="controls">
     <button onclick="startWebRTC()">Start WebRTC Connection</button>
 </div>
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatbuffers@24.3.25/js/flatbuffers.min.js"></script>
 <script>
 
     const leftVideo = document.getElementById('leftVideo');
@@ -80,9 +68,8 @@
     let stream;
     let pc1;
     let pc2;
-    let messageType;
-    let dataChannel;
-    let startTime;
+    let selectedIcePolicyPeerA;
+    let selectedIcePolicyPeerB;
 
     const offerOptions = {
         offerToReceiveAudio: 1,
@@ -104,16 +91,14 @@
         }
     }
 
-    function getConfiguration(candidateType) {
+    function getConfiguration(port) {
         return {
             iceServers: [{
-                urls: 'stun:localhost:3478'
-            }, {
-                urls: 'turn:localhost:3478',
+                urls: 'turn:localhost:' + port,
                 username: 'test',
                 credential: '1234'
             }],
-            iceTransportPolicy: candidateType
+            iceTransportPolicy: 'relay'
         };
     }
 
@@ -121,30 +106,15 @@
         maybeCreateStream();
         leftVideo.play();
 
-        const dataSize = parseInt(document.getElementById('dataSize').value, 10);
-        const interval = parseInt(document.getElementById('interval').value, 10);
+        let turnServerPortPeerA = parseInt(document.querySelector('input[name="turnServerPortPeerA"]:checked').value);
+        let turnServerPortPeerB = parseInt(document.querySelector('input[name="turnServerPortPeerB"]:checked').value);
 
-        messageType = document.querySelector('input[name="messageType"]:checked').value;
-        let candidateType = document.querySelector('input[name="candidateType"]:checked').value;
-
-        let configuration = getConfiguration(candidateType);
-
-        pc1 = new RTCPeerConnection(configuration);
+        pc1 = new RTCPeerConnection(getConfiguration(turnServerPortPeerA));
         pc1.onicecandidate = e => onIceCandidate(pc1, e);
         pc1.oniceconnectionstatechange = e => onIceStateChange(pc1, e);
         console.log('Created local peer connection object pc1');
 
-        dataChannel = pc1.createDataChannel('testChannel');
-        dataChannel.onopen = () => {
-            console.log("dataChannel opened");
-            setInterval(() => {
-                startTime = new Date().getTime();
-                let data = getDataChannelMessage(dataSize);
-                dataChannel.send(data);
-            }, interval);
-        };
-
-        pc2 = new RTCPeerConnection(configuration);
+        pc2 = new RTCPeerConnection(getConfiguration(turnServerPortPeerB));
         pc2.onicecandidate = e => onIceCandidate(pc2, e);
         pc2.oniceconnectionstatechange = e => onIceStateChange(pc2, e);
         console.log('Created remote peer connection object pc2');
@@ -153,34 +123,8 @@
         stream.getTracks().forEach(track => pc1.addTrack(track, stream));
         console.log('Added local stream to pc1');
 
-        pc2.ondatachannel = (event) => {
-            const receiveChannel = event.channel;
-            receiveChannel.onmessage = (event) => {
-                const endTime = new Date().getTime();
-                const timeTaken = endTime - startTime;
-                console.log("timeTaken : " + timeTaken);
-                document.getElementById('timeResult').textContent = timeTaken;
-            };
-        };
-
         console.log('pc1 createOffer start');
         pc1.createOffer(onCreateOfferSuccess, onCreateSessionDescriptionError, offerOptions);
-    }
-
-    function getDataChannelMessage(dataSize) {
-        if (messageType === "b") {
-            const data = new Uint8Array(dataSize).fill(0);
-            console.log("send data : " + data);
-            return data;
-        } else if (messageType === "f") {
-            const builder = new flatbuffers.Builder();
-            const contentOffset = MyGame.Sample.Message.createContentVector(builder, data);
-            MyGame.Sample.Message.startMessage(builder);
-            MyGame.Sample.Message.addContent(builder, contentOffset);
-            const message = MyGame.Sample.Message.endMessage(builder);
-            builder.finish(message);
-            return builder.asUint8Array();
-        }
     }
 
     function onCreateSessionDescriptionError(error) {

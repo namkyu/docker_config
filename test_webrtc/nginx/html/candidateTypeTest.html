@@ -86,7 +86,6 @@
     let pc2;
     let selectedIcePolicyPeerA;
     let selectedIcePolicyPeerB;
-    let startTime;
 
     const offerOptions = {
         offerToReceiveAudio: 1,
@@ -143,16 +142,6 @@
         pc2.ontrack = gotRemoteStream;
         stream.getTracks().forEach(track => pc1.addTrack(track, stream));
         console.log('Added local stream to pc1');
-
-        pc2.ondatachannel = (event) => {
-            const receiveChannel = event.channel;
-            receiveChannel.onmessage = (event) => {
-                const endTime = new Date().getTime();
-                const timeTaken = endTime - startTime;
-                console.log("timeTaken : " + timeTaken);
-                document.getElementById('timeResult').textContent = timeTaken;
-            };
-        };
 
         console.log('pc1 createOffer start');
         pc1.createOffer(onCreateOfferSuccess, onCreateSessionDescriptionError, offerOptions);
