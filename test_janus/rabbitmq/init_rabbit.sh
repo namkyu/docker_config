@@ -1,5 +1,10 @@
 #!/bin/bash
-# https://pulse.mozilla.org/api/
+
+rabbitmqctl await_startup
+
+USER=nklee
+PW=1234
+VHOST=test
 
 create_user() {
 	rabbitmqctl add_vhost $VHOST
@@ -11,17 +16,13 @@ create_user() {
 create_exchanges() {
 	curl -i -u $USER:$PW -H "content-type:application/json" \
 	-XPUT -d'{"type":"fanout","durable":false}' \
-	http://localhost:15672/api/exchanges/$VHOST/janus-exchange	
+	http://localhost:15672/api/exchanges/$VHOST/janus-exchange
 }
 
 create_queues() {
 	curl -i -u $USER:$PW -H "content-type:application/json" \
 	-XPUT -d'{"auto_delete":false,"durable":false}' \
-	http://localhost:15672/api/queues/$VHOST/janus-events	
-	
-	curl -i -u $USER:$PW -H "content-type:application/json" \
-	-XPUT -d'{"auto_delete":false,"durable":false}' \
-	http://localhost:15672/api/queues/$VHOST/webrtc-service-events
+	http://localhost:15672/api/queues/$VHOST/janus-events
 }
 
 create_bind() {
@@ -30,24 +31,23 @@ create_bind() {
 	http://localhost:15672/api/bindings/$VHOST/e/janus-exchange/q/janus-events
 }
 
-USER=martin
-PW=1234
-VHOST=test
-
 echo "========================================="
 echo "create_user"
 echo "========================================="
 create_user
+sleep 3
 
 echo "========================================="
 echo "create_exchanges"
 echo "========================================="
 create_exchanges
+sleep 3
 
 echo "========================================="
 echo "create_queues"
 echo "========================================="
 create_queues
+sleep 3
 
 echo "========================================="
 echo "create_bind"

@@ -1,74 +1,44 @@
-version: '3.4'
 
 services:
 
-  #####################################################
-  # RabbitMQ container
-  #####################################################
-  rabbit1:
-    image: martin_rabbitmq_cluster_3.8.5:v1
-    container_name: rabbit1
+  rabbit:
+    image: nklee-rabbitmq:3.13.3-management
+    container_name: rabbit
     ports:
-      - "6672:5672"
-      - "9090:9090"
-      - "15672:15672"
-      - "61613:61613"    
+      - "5672:5672" # AMQP 프로토콜 포트
+      - "15672:15672" # RabbitMQ 관리 웹 UI
+      - "61613:61613" # STOMP 프로토콜 포트
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:15672"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      interval: 10s
+      timeout: 5s
+      retries: 10
     environment:
       - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=admin    
+      - RABBITMQ_DEFAULT_PASS=admin
     volumes:
       - "./rabbitmq/init_rabbit.sh:/init_rabbit.sh"
     restart: on-failure
 
-  #####################################################
-  # Janus container
-  #####################################################
-  janus-container-01:
+  janus:
     image: canyan/janus-gateway:master
     command: ["/usr/local/bin/janus", "-F", "/usr/local/etc/janus"]
-    container_name: janus-container-01
-    depends_on:         
-      - rabbit1        
+    container_name: janus
+    depends_on:
+      - rabbit
     links:
-      - rabbit1
+      - rabbit
     ports:
-      - "8088:8088"      
-      - "8889:8889"
-      - "8000:8000"
-      - "7088:7088"
-      - "7089:7089"
-      - "8188:8188"
-      - "7188:7188"      
-      - "5002:5002/udp"
-      - "5004:5004/udp"
-      - "8004:8004/udp"
-      - "20000-20100:20000-20100/udp"      
+      - "8088:8088" # HTTP REST API 연동
+      - "7088:7088" # HTTP Admin API 연동
+      - "20000-20100:20000-20100/udp" # ICE 후보 포트
     volumes:
-      - "./janus/config/janus.transport.http.jcfg:/usr/local/etc/janus/janus.transport.http.jcfg"
       - "./janus/config/janus.jcfg:/usr/local/etc/janus/janus.jcfg"
-      - "./janus/config/janus.plugin.audiobridge.jcfg:/usr/local/etc/janus/janus.plugin.audiobridge.jcfg"      
-      - "./janus/config/janus.plugin.videoroom.jcfg:/usr/local/etc/janus/janus.plugin.videoroom.jcfg"      
-      - "./janus/config/janus.plugin.streaming.jcfg:/usr/local/etc/janus/janus.plugin.streaming.jcfg"      
-      - "./janus/config/janus.plugin.textroom.jcfg:/usr/local/etc/janus/janus.plugin.textroom.jcfg"      
-      - "./janus/config/janus.transport.websockets.jcfg:/usr/local/etc/janus/janus.transport.websockets.jcfg"      
-      - "./janus/config/janus.eventhandler.rabbitmqevh.jcfg:/usr/local/etc/janus/janus.eventhandler.rabbitmqevh.jcfg"            
+      - "./janus/config/janus.transport.http.jcfg:/usr/local/etc/janus/janus.transport.http.jcfg"
+      - "./janus/config/janus.plugin.audiobridge.jcfg:/usr/local/etc/janus/janus.plugin.audiobridge.jcfg"
+      - "./janus/config/janus.plugin.videoroom.jcfg:/usr/local/etc/janus/janus.plugin.videoroom.jcfg"
+      - "./janus/config/janus.plugin.streaming.jcfg:/usr/local/etc/janus/janus.plugin.streaming.jcfg"
+      - "./janus/config/janus.plugin.textroom.jcfg:/usr/local/etc/janus/janus.plugin.textroom.jcfg"
+      - "./janus/config/janus.eventhandler.rabbitmqevh.jcfg:/usr/local/etc/janus/janus.eventhandler.rabbitmqevh.jcfg"
       - "./janus/janus.log:/var/log/janus.log"
-      - "./janus/eng.opus:/eng.opus"
     restart: on-failure
-  
-  #####################################################
-  # NginX container
-  #####################################################
-  nginx:
-    image: nginx
-    container_name: nginx
-    ports:
-      - 7979:80
-    volumes:
-      - ./nginx/html:/usr/share/nginx/html
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf

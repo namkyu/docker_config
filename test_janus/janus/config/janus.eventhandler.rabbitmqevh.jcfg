@@ -12,9 +12,9 @@ general: {
 	json = "indented"				# Whether the JSON messages should be indented (default),
 									# plain (no indentation) or compact (no indentation and no spaces)
 
-	host = "rabbit1"				# The address of the RabbitMQ server
+	host = "rabbit"				# The address of the RabbitMQ server
 	port = 5672					# The port of the RabbitMQ server (5672 by default)
-	username = "martin"				# Username to use to authenticate, if needed
+	username = "nklee"				# Username to use to authenticate, if needed
 	password = "1234"				# Password to use to authenticate, if needed
 	vhost = "test"					# Virtual host to specify when logging in, if needed
 	exchange = "janus-exchange"
