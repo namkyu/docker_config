@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  proxy1:
+    image: nginx:alpine
+    container_name: xff_proxy1
+    ports:
+      - "8080:80"
+    volumes:
+      - ./conf/proxy1.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - proxy2
+    networks:
+      - xff_network
+
+  proxy2:
+    image: nginx:alpine
+    container_name: xff_proxy2
+    ports:
+      - "8081:80"
+    volumes:
+      - ./conf/proxy2.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - xff_network
+
+  backend:
+    image: nginx:alpine
+    container_name: xff_backend
+    ports:
+      - "8082:80"
+    volumes:
+      - ./conf/backend.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - xff_network
+
+networks:
+  xff_network:
+    driver: bridge
