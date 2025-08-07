@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  mysql-db1:
+    image: mysql:8.0
+    container_name: mysql-db1
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: testdb1
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - db1_data:/var/lib/mysql
+      - ./init-scripts/init_db1.sql:/docker-entrypoint-initdb.d/init_db1.sql
+    command: --server-id=1 --log-bin=mysql-bin --binlog-format=ROW
+
+  mysql-db2:
+    image: mysql:8.0
+    container_name: mysql-db2
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: testdb2
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+    ports:
+      - "3307:3306"
+    volumes:
+      - db2_data:/var/lib/mysql
+      - ./init-scripts/init_db2.sql:/docker-entrypoint-initdb.d/init_db2.sql
+    command: --server-id=2 --log-bin=mysql-bin --binlog-format=ROW
+
+volumes:
+  db1_data:
+  db2_data:
